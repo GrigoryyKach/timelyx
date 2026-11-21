@@ -190,6 +190,8 @@ mod tests {
 
     #[test]
     fn serve_request_and_single_instance() {
+        // The endpoint name hashes the data folder, which other tests change: hold the shared lock.
+        let _env = crate::config::ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // A role name unique to this test run, so parallel tests and real instances never collide.
         let role = format!("test{}", std::process::id());
         assert!(request(&role, "ping").is_none());

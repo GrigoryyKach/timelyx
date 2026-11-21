@@ -12,6 +12,11 @@ pub fn data_dir() -> PathBuf {
     dirs::config_dir().unwrap_or_else(|| PathBuf::from(".")).join("Timelyx")
 }
 
+/// Held by every test that sets, removes or depends on `TIMELYX_DATA_DIR` (or the autostart override), because
+/// the environment is shared by all test threads.
+#[cfg(test)]
+pub static ENV_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 /// Is a data-dir override active? Test instances use their own names for the single-instance locks.
 pub fn is_test_instance() -> bool {
     std::env::var_os("TIMELYX_DATA_DIR").is_some_and(|d| !d.is_empty())

@@ -90,6 +90,7 @@ mod tests {
 
     #[test]
     fn autostart_round_trips_in_a_test_folder() {
+        let _env = crate::config::ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         let dir = std::env::temp_dir().join(format!("timelyx-autostart-{}", std::process::id()));
         std::env::set_var("TIMELYX_DATA_DIR", &dir);
         assert!(!autostart_enabled());

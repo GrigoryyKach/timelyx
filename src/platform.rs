@@ -89,6 +89,7 @@ mod tests {
 
     #[test]
     fn autostart_goes_to_a_private_key_and_round_trips() {
+        let _env = crate::config::ENV_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         // SAFETY: tests in this module run in one thread each; the variable is only read by `run_key`.
         unsafe { std::env::set_var("TIMELYX_AUTOSTART_KEY", "Software\\Timelyx\\UnitTest\\Run") };
         assert!(!autostart_enabled());
