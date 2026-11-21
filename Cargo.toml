@@ -1,0 +1,46 @@
+[package]
+name = "timelyx"
+version = "1.0.0"
+edition = "2021"
+build = "build.rs"
+description = "An automatic, local activity tracker: how long you spend in each app and site"
+
+[[bin]]
+name = "Timelyx"
+path = "src/main.rs"
+
+[dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std", "serde"] }
+dirs = "7.0.0"
+eframe = { version = "0.37.0", default-features = false, features = ["default_fonts", "glow", "clipboard", "links"] }
+rfd = "0.15.4"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
+tray-icon = { version = "0.26.1", default-features = false }
+rusqlite = { version = "0.37", features = ["bundled"] }
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[target.'cfg(windows)'.dependencies]
+tauri-winrt-notification = "0.8.1"
+winreg = "0.56.0"
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_System_Com", "Win32_System_Com_StructuredStorage", "Win32_UI_Shell", "Win32_UI_Shell_PropertiesSystem", "Win32_Storage_EnhancedStorage", "Win32_System_Variant"] }
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation", "Win32_System_Threading", "Win32_UI_WindowsAndMessaging", "Win32_Security",
+    "Win32_UI_Accessibility", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_SystemInformation",
+    "Win32_Graphics_Gdi", "Win32_System_RemoteDesktop", "Win32_System_LibraryLoader",
+    "Win32_Storage_FileSystem", "Win32_System_Pipes", "Win32_System_IO",
+] }
+
+[target.'cfg(unix)'.dependencies]
+eframe = { version = "0.37.0", default-features = false, features = ["x11", "wayland"] }
+libc = "0.2"
+gtk = "0.18"
+tray-icon = { version = "0.26.1", default-features = false, features = ["libappindicator"] }
+notify-rust = "4"
+x11rb = { version = "0.13", features = ["screensaver"] }
+
+[profile.release]
+opt-level = 3
+strip = true
+lto = true
+codegen-units = 1

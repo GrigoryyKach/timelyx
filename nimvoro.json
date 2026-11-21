@@ -1,0 +1,148 @@
+{
+  "schema": 1,
+  "id": "timelyx",
+  "name": "Timelyx",
+  "tagline": "Automatic time tracking for your apps and sites",
+  "description": "Timelyx quietly records which program or website you are using, and for how long, with no timers to start. See where the day went in a timeline, a category breakdown, weekly and monthly charts and a weekday-by-hour heatmap. It runs in the tray and uses almost no memory. Everything stays on your PC: no account, no cloud, and browsers are tracked by site name only, never by page title or history.",
+  "features": [
+    {
+      "title": "Fully automatic",
+      "text": "Starts with the computer, follows the window in front and stops counting when you step away, lock the screen or put the computer to sleep. Full screen games and video keep counting."
+    },
+    {
+      "title": "Sites, not just browsers",
+      "text": "YouTube, GitHub or Gmail show up as themselves instead of one big Chrome number. Only the site name is stored, never page titles, and private windows are recorded as Private browsing."
+    },
+    {
+      "title": "Charts that answer questions",
+      "text": "A 24 hour timeline of today, a category donut, top apps and sites, stacked bars for the week or month, a weekday by hour heatmap and your longest focus run."
+    },
+    {
+      "title": "Your categories",
+      "text": "Programs and sites are sorted into Code, Browser, Communication, Video, Games, Office, Design, System and Other. Change any of them, add your own with a colour, or hide an app."
+    },
+    {
+      "title": "Daily limits",
+      "text": "Set a limit per category or program and get a notification when you reach it. Nothing is ever blocked or closed."
+    },
+    {
+      "title": "Light on the machine",
+      "text": "The tracker is a separate small process that draws nothing. The window opens only when you ask for it and closes completely."
+    },
+    {
+      "title": "Yours, offline",
+      "text": "A local SQLite database, CSV export, optional automatic cleanup and a one-click delete of all data. English, Russian and Ukrainian, light and dark themes."
+    }
+  ],
+  "category": "Productivity",
+  "accent": [
+    "#e8669a",
+    "#b0306a"
+  ],
+  "icon": "assets/icon.png",
+  "screenshots": [
+    "assets/screenshots/dark-en-today.png",
+    "assets/screenshots/dark-en-trends.png",
+    "assets/screenshots/dark-en-apps.png",
+    "assets/screenshots/dark-en-settings.png"
+  ],
+  "exe": "Timelyx.exe",
+  "asset": "Timelyx-win-x64.zip",
+  "platforms": [
+    "windows",
+    "linux"
+  ],
+  "requirements": [
+    "Windows 10/11 x64"
+  ],
+  "linux": {
+    "asset": "Timelyx-linux-x64.tar.gz",
+    "exe": "timelyx",
+    "requirements": "Linux x86_64 with an X11 session (on Wayland the window and reports work but tracking is not available) with GTK 3 and libayatana-appindicator3 (tray icon; GNOME also needs the AppIndicator extension), xdg-desktop-portal (file dialogs), a notification service and xdg-utils"
+  },
+  "settingsDir": "%APPDATA%\\Timelyx",
+  "i18n": {
+    "ru": {
+      "tagline": "Автоматический учёт времени в программах и на сайтах",
+      "description": "Timelyx тихо записывает, какой программой или сайтом вы пользуетесь и как долго, без таймеров, которые нужно запускать. Лента дня, разбивка по категориям, графики за неделю и месяц и тепловая карта «день недели по часам» покажут, куда ушёл день. Он работает в трее и почти не занимает память. Все данные остаются на вашем ПК: без аккаунта и облака, а браузеры учитываются только по названию сайта, без заголовков страниц и истории.",
+      "category": "Продуктивность",
+      "features": [
+        {
+          "title": "Полностью автоматически",
+          "text": "Запускается вместе с компьютером, следит за окном на переднем плане и не считает время, когда вы отошли, заблокировали экран или усыпили компьютер. Полноэкранные игры и видео считаются всегда."
+        },
+        {
+          "title": "Сайты, а не просто браузер",
+          "text": "YouTube, GitHub или Gmail отображаются сами по себе, а не одной большой цифрой «Chrome». Хранится только название сайта, без заголовков страниц, а приватные окна записываются как «Приватный просмотр»."
+        },
+        {
+          "title": "Графики, которые отвечают на вопросы",
+          "text": "Лента сегодняшнего дня по часам, кольцо категорий, самые частые программы и сайты, столбцы за неделю или месяц, тепловая карта «день недели по часам» и самый долгий фокус."
+        },
+        {
+          "title": "Ваши категории",
+          "text": "Программы и сайты раскладываются по категориям: код, браузер, общение, видео, игры, офис, дизайн, система и другое. Любую можно поменять, добавить свою с цветом или скрыть программу."
+        },
+        {
+          "title": "Дневные лимиты",
+          "text": "Задайте лимит на категорию или программу и получите уведомление, когда он достигнут. Ничего не блокируется и не закрывается."
+        },
+        {
+          "title": "Не нагружает компьютер",
+          "text": "Учёт работает отдельным маленьким процессом, который ничего не рисует. Окно открывается только по вашей просьбе и закрывается полностью."
+        },
+        {
+          "title": "Ваше и офлайн",
+          "text": "Локальная база SQLite, экспорт в CSV, необязательная автоочистка и удаление всех данных в один клик. Русский, украинский и английский, светлая и тёмная темы."
+        }
+      ],
+      "requirements": [
+        "Windows 10/11 x64"
+      ],
+      "linux": {
+        "requirements": "Linux x86_64 с сеансом X11 (в Wayland окно и отчёты работают, но учёт недоступен), GTK 3 и libayatana-appindicator3 (значок в трее; в GNOME нужно расширение AppIndicator), xdg-desktop-portal (диалоги файлов), служба уведомлений и xdg-utils"
+      }
+    },
+    "uk": {
+      "tagline": "Автоматичний облік часу в програмах і на сайтах",
+      "description": "Timelyx тихо записує, якою програмою чи сайтом ви користуєтеся і як довго, без таймерів, які треба запускати. Стрічка дня, розбивка за категоріями, графіки за тиждень і місяць та теплова карта «день тижня за годинами» покажуть, куди пішов день. Він працює в треї та майже не займає пам'ять. Усі дані лишаються на вашому ПК: без акаунта й хмари, а браузери враховуються лише за назвою сайту, без заголовків сторінок та історії.",
+      "category": "Продуктивність",
+      "features": [
+        {
+          "title": "Повністю автоматично",
+          "text": "Запускається разом із комп'ютером, стежить за вікном на передньому плані й не рахує час, коли ви відійшли, заблокували екран або приспали комп'ютер. Повноекранні ігри та відео рахуються завжди."
+        },
+        {
+          "title": "Сайти, а не просто браузер",
+          "text": "YouTube, GitHub чи Gmail відображаються самі по собі, а не одним великим числом «Chrome». Зберігається лише назва сайту, без заголовків сторінок, а приватні вікна записуються як «Приватний перегляд»."
+        },
+        {
+          "title": "Графіки, що відповідають на запитання",
+          "text": "Стрічка сьогоднішнього дня за годинами, кільце категорій, найчастіші програми та сайти, стовпці за тиждень чи місяць, теплова карта «день тижня за годинами» і найдовший фокус."
+        },
+        {
+          "title": "Ваші категорії",
+          "text": "Програми та сайти розкладаються за категоріями: код, браузер, спілкування, відео, ігри, офіс, дизайн, система та інше. Будь-яку можна змінити, додати власну з кольором або сховати програму."
+        },
+        {
+          "title": "Денні ліміти",
+          "text": "Задайте ліміт на категорію чи програму й отримайте сповіщення, коли його досягнуто. Нічого не блокується і не закривається."
+        },
+        {
+          "title": "Не навантажує комп'ютер",
+          "text": "Облік працює окремим маленьким процесом, який нічого не малює. Вікно відкривається лише на ваше прохання й закривається повністю."
+        },
+        {
+          "title": "Ваше й офлайн",
+          "text": "Локальна база SQLite, експорт у CSV, необов'язкове автоочищення та видалення всіх даних в один клік. Українська, російська та англійська, світла й темна теми."
+        }
+      ],
+      "requirements": [
+        "Windows 10/11 x64"
+      ],
+      "linux": {
+        "requirements": "Linux x86_64 із сеансом X11 (у Wayland вікно та звіти працюють, але облік недоступний), GTK 3 і libayatana-appindicator3 (значок у треї; у GNOME потрібне розширення AppIndicator), xdg-desktop-portal (діалоги файлів), служба сповіщень і xdg-utils"
+      }
+    }
+  }
+}

@@ -1,0 +1,116 @@
+name: Release
+
+# Builds the Windows and Linux binaries and publishes one GitHub Release when a vX.Y.Z tag is pushed.
+# The NIMVORO launcher downloads Timelyx-win-x64.zip (Windows) or Timelyx-linux-x64.tar.gz (Linux) from the release (names set in nimvoro.json).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version matches the tag
+        shell: pwsh
+        run: |
+          $v = (Select-String -Path Cargo.toml -Pattern '^version\s*=\s*"(.+)"' | Select-Object -First 1).Matches[0].Groups[1].Value
+          "VERSION=$v" >> $env:GITHUB_ENV
+          if ("${{ github.ref_type }}" -eq "tag" -and "${{ github.ref_name }}" -ne "v$v") {
+            throw "Tag ${{ github.ref_name }} does not match version $v"
+          }
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Tests
+        run: cargo test --release
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Package
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force pkg | Out-Null
+          Copy-Item target/release/Timelyx.exe pkg/
+          Compress-Archive -Path pkg/* -DestinationPath Timelyx-win-x64.zip -Force
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: Timelyx-win-x64.zip
+
+  linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Version matches the tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          v=$(grep -m1 -E '^version\s*=' Cargo.toml | sed -E 's/.*"(.+)".*/\1/')
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          if [ "$REF_TYPE" = "tag" ] && [ "$REF_NAME" != "v$v" ]; then
+            echo "Tag $REF_NAME does not match version $v"
+            exit 1
+          fi
+
+      - name: Install system packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libayatana-appindicator3-dev libxkbcommon-dev libwayland-dev libx11-dev libxcb1-dev libxdo-dev
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Tests
+        run: cargo test --release
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Package
+        run: |
+          mkdir pkg
+          cp target/release/Timelyx pkg/timelyx
+          cp assets/icon.png pkg/icon.png
+          chmod +x pkg/timelyx
+          tar -czf Timelyx-linux-x64.tar.gz -C pkg timelyx icon.png
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: Timelyx-linux-x64.tar.gz
+
+  publish:
+    needs: [windows, linux]
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          tag="$REF_NAME"
+          if [[ "$tag" != v* ]]; then
+            tag="v$(grep -m1 -E '^version\s*=' Cargo.toml | sed -E 's/.*"(.+)".*/\1/')"
+          fi
+          gh release create "$tag" dist/Timelyx-win-x64.zip dist/Timelyx-linux-x64.tar.gz --title "Timelyx $tag" --generate-notes --verify-tag
