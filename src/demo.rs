@@ -181,6 +181,12 @@ pub fn fill(dir: &Path) {
         r.1 = r.1.min(now - 60);
     }
     rows.retain(|r| r.1 > r.0);
+    // The window shows "Visual Studio Code, 42 minutes" as the current activity: make it part of today.
+    let (cs, ce) = (now - 42 * 60, now - 60);
+    rows.retain(|r| r.1 <= cs || r.0 >= ce);
+    if let Some((a, s)) = target_of(&db, Act::App(CODE)) {
+        rows.push((cs, ce, a, s));
+    }
     rows.sort_by_key(|r| r.0);
     let _ = db.append_sessions(&rows);
 

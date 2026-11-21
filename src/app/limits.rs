@@ -96,11 +96,12 @@ impl App {
                             ui.horizontal(|ui| {
                                 if l.kind == "category" {
                                     let info = self.cat.category(lang, &l.target);
-                                    let (r, _) = ui.allocate_exact_size(vec2(14.0, 20.0), Sense::hover());
-                                    ui.painter().rect_filled(egui::Rect::from_center_size(r.center(), vec2(12.0, 12.0)), 3.0, widgets::rgb(info.color));
+                                    let (r, _) = ui.allocate_exact_size(vec2(20.0, 20.0), Sense::hover());
+                                    ui.painter().rect_filled(egui::Rect::from_center_size(r.left_center() + vec2(6.0, 0.0), vec2(12.0, 12.0)), 3.0, widgets::rgb(info.color));
                                 }
                                 ui.label(RichText::new(self.cat.limit_target_name(lang, l)).font(theme::medium(14.0)).color(p.text));
                                 if reached {
+                                    ui.add_space(8.0);
                                     ui.label(RichText::new(t.limit_reached).font(theme::reg(12.0)).color(p.warning));
                                 }
                             });
@@ -110,6 +111,7 @@ impl App {
                             ui.add_space(8.0);
                         });
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.spacing_mut().item_spacing.x = 12.0;
                             if widgets::icon_button(ui, Icon::Trash, 32.0, p).on_hover_text(t.remove).clicked() {
                                 act = Some(Act::Remove(l.kind.clone(), l.target.clone()));
                             }

@@ -64,8 +64,8 @@ impl App {
                     }
                     ui.horizontal(|ui| {
                         ui.set_min_height(48.0);
-                        let (r, _) = ui.allocate_exact_size(vec2(14.0, 48.0), Sense::hover());
-                        ui.painter().rect_filled(egui::Rect::from_center_size(r.center(), vec2(12.0, 12.0)), 3.0, widgets::rgb(*color));
+                        let (r, _) = ui.allocate_exact_size(vec2(20.0, 48.0), Sense::hover());
+                        ui.painter().rect_filled(egui::Rect::from_center_size(r.left_center() + vec2(6.0, 0.0), vec2(12.0, 12.0)), 3.0, widgets::rgb(*color));
                         ui.vertical(|ui| {
                             ui.add_space(8.0);
                             ui.spacing_mut().item_spacing.y = 2.0;
@@ -112,8 +112,8 @@ impl App {
                     } else {
                         ui.horizontal(|ui| {
                             ui.set_min_height(48.0);
-                            let (r, _) = ui.allocate_exact_size(vec2(14.0, 48.0), Sense::hover());
-                            ui.painter().rect_filled(egui::Rect::from_center_size(r.center(), vec2(12.0, 12.0)), 3.0, widgets::rgb(c.color));
+                            let (r, _) = ui.allocate_exact_size(vec2(20.0, 48.0), Sense::hover());
+                            ui.painter().rect_filled(egui::Rect::from_center_size(r.left_center() + vec2(6.0, 0.0), vec2(12.0, 12.0)), 3.0, widgets::rgb(c.color));
                             ui.label(RichText::new(&c.name).font(theme::medium(14.0)).color(p.text));
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 if widgets::icon_button(ui, Icon::Trash, 32.0, p).on_hover_text(t.delete).clicked() {

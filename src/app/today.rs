@@ -253,7 +253,7 @@ impl App {
         ui.horizontal_top(|ui| {
             ui.spacing_mut().item_spacing.x = 16.0;
             ui.vertical(|ui| {
-                charts::donut(ui, p, 150.0, 20.0, &slices, &fmt::duration_short(self.lang, total), self.s().total);
+                charts::donut(ui, p, 150.0, 20.0, &slices, &fmt::duration(self.lang, total), self.s().total);
             });
             ui.vertical(|ui| {
                 ui.set_width(ui.available_width());

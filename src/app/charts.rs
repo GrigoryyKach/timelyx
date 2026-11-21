@@ -111,7 +111,7 @@ pub fn donut(ui: &mut Ui, p: &Pal, size: f32, thickness: f32, slices: &[(Color32
             painter.add(Shape::line(arc_points(c, r, a0, a1, steps), PathStroke::new(thickness, *col)));
         }
     }
-    painter.text(c + vec2(0.0, -7.0), Align2::CENTER_CENTER, top, theme::mono(17.0), p.text);
+    painter.text(c + vec2(0.0, -7.0), Align2::CENTER_CENTER, top, theme::mono(14.0), p.text);
     painter.text(c + vec2(0.0, 12.0), Align2::CENTER_CENTER, sub, theme::reg(12.0), p.muted);
 }
 
@@ -266,12 +266,12 @@ pub fn legend_row(ui: &mut Ui, p: &Pal, lang: Lang, color: Color32, name: &str, 
 pub fn legend_chip(ui: &mut Ui, p: &Pal, lang: Lang, color: Color32, name: &str, secs: i64) {
     let g_name = ui.painter().layout_no_wrap(name.to_string(), theme::reg(12.5), p.text2);
     let g_time = ui.painter().layout_no_wrap(fmt::duration(lang, secs), theme::mono(12.0), p.muted);
-    let w = 14.0 + g_name.size().x + 8.0 + g_time.size().x;
+    let w = 16.0 + g_name.size().x + 8.0 + g_time.size().x;
     let (rect, _) = ui.allocate_exact_size(vec2(w, 20.0), Sense::hover());
     let painter = ui.painter();
     painter.circle_filled(pos2(rect.left() + 4.0, rect.center().y), 4.0, color);
-    painter.galley(pos2(rect.left() + 14.0, rect.center().y - g_name.size().y / 2.0), g_name.clone(), p.text2);
-    painter.galley(pos2(rect.left() + 14.0 + g_name.size().x + 8.0, rect.center().y - g_time.size().y / 2.0), g_time, p.muted);
+    painter.galley(pos2(rect.left() + 16.0, rect.center().y - g_name.size().y / 2.0), g_name.clone(), p.text2);
+    painter.galley(pos2(rect.left() + 16.0 + g_name.size().x + 8.0, rect.center().y - g_time.size().y / 2.0), g_time, p.muted);
 }
 #[cfg(test)]
 mod tests {
