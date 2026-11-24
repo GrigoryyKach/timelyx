@@ -1,4 +1,4 @@
-//! Demo data: a made-up, realistic two weeks of activity for screenshots and manual trials.
+//! Demo data: a made-up, realistic eight weeks of activity for screenshots and manual trials.
 //!
 //! Used with `--demo` or `TIMELYX_DEMO=1`, and only when `TIMELYX_DATA_DIR` points at a throw-away folder.
 //! Nothing here reads real activity.
@@ -116,7 +116,7 @@ pub fn fill(dir: &Path) {
     let today = day_start(&tz, now);
     let mut rows: Vec<(i64, i64, i64, Option<i64>)> = Vec::new();
 
-    for back in (0..14).rev() {
+    for back in (0..56).rev() {
         let day = {
             // Walk back whole local days (a DST day is 23 or 25 hours).
             let mut d = today;
@@ -213,7 +213,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn demo_fills_two_weeks_of_plausible_data() {
+    fn demo_fills_eight_weeks_of_plausible_data() {
         let dir = std::env::temp_dir().join(format!("timelyx-demo-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         fill(&dir);
@@ -221,6 +221,8 @@ mod tests {
         let now = chrono::Utc::now().timestamp();
         let rows = db.rows(now - 15 * 86_400, now + 1).unwrap();
         assert!(rows.len() > 200, "{}", rows.len());
+        // Several weeks back, so past days and the calendar dots have something to show.
+        assert!(db.rows(now - 55 * 86_400, now - 50 * 86_400).unwrap().len() > 30);
         // No session in the future, none longer than a few hours.
         assert!(rows.iter().all(|r| r.end <= now && r.end - r.start < 4 * 3600));
         let cats_seen: std::collections::HashSet<_> = rows.iter().map(|r| r.category.clone()).collect();

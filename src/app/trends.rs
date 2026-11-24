@@ -14,7 +14,7 @@ use eframe::egui::{self, Layout, Margin, RichText, Sense, Ui, vec2};
 use std::sync::Arc;
 
 /// Gaps up to this long between two sessions of one category still count as one focus run.
-const FOCUS_GAP: i64 = 120;
+pub const FOCUS_GAP: i64 = 120;
 
 pub struct TrendsModel {
     pub label: String,
@@ -68,7 +68,15 @@ impl App {
                 } else {
                     fmt::weekday_short(lang, weekday_index(&chrono::Local, d.start + 3600)).to_string()
                 };
-                BarDay { label, title: fmt::date_with_weekday(lang, d.start + 3600), by_cat: d.by_cat.clone(), total: d.total, highlight: d.start == today_start }
+                BarDay {
+                    label,
+                    title: fmt::date_with_weekday(lang, d.start + 3600),
+                    by_cat: d.by_cat.clone(),
+                    total: d.total,
+                    highlight: d.start == today_start,
+                    clickable: d.start <= self.now,
+                    date: dt.map(|x| x.date_naive()).unwrap_or(self.today),
+                }
             })
             .collect();
         let total = stats::total(&rows, from, to);
@@ -98,6 +106,7 @@ impl App {
         let mut new_span = None;
         let mut step = 0;
         let mut current = false;
+        let mut open_day = None;
         page(ui, p, t.nav_trends, None, |_| {}, |ui| {
             // Toolbar: week or month, the period, arrows.
             ui.horizontal(|ui| {
@@ -151,7 +160,9 @@ impl App {
             titled_card(ui, p, t.by_day, 0.0, |ui| {
                 let color_of = |c: &str| widgets::rgb(self.cat.category(self.lang, c).color);
                 let name_of = |c: &str| self.cat.category(self.lang, c).name;
-                charts::stacked_bars(ui, p, self.lang, 240.0, &m.bars, &color_of, &name_of);
+                if let Some(i) = charts::stacked_bars(ui, p, self.lang, 240.0, &m.bars, &color_of, &name_of, t.click_details) {
+                    open_day = Some(m.bars[i].date);
+                }
                 ui.add_space(12.0);
                 ui.horizontal_wrapped(|ui| {
                     ui.spacing_mut().item_spacing = vec2(18.0, 6.0);
@@ -181,6 +192,10 @@ impl App {
                 });
             });
         });
+        // The period and offset stay as they are, so coming back to this tab shows the same weeks.
+        if let Some(d) = open_day {
+            self.open_day(d);
+        }
         if let Some(s) = new_span {
             if s != self.trends_view.span {
                 self.trends_view.span = s;

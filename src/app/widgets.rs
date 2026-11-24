@@ -29,6 +29,7 @@ pub fn hover_fill(ui: &Ui, id: egui::Id, hovered: bool, p: &Pal) -> Color32 {
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Icon {
     Today,
+    Calendar,
     Trends,
     Apps,
     Tag,
@@ -62,6 +63,13 @@ pub fn icon(p: &Painter, ic: Icon, c: Pos2, size: f32, col: Color32) {
             p.circle_stroke(c, s * 0.82, st);
             line(c, c + vec2(0.0, -s * 0.5));
             line(c, c + vec2(s * 0.38, s * 0.22));
+        }
+        Icon::Calendar => {
+            let r = Rect::from_center_size(c + vec2(0.0, s * 0.1), vec2(s * 1.7, s * 1.5));
+            p.rect_stroke(r, 2.5, st, StrokeKind::Inside);
+            line(pos2(r.left(), r.top() + s * 0.5), pos2(r.right(), r.top() + s * 0.5));
+            line(pos2(r.left() + s * 0.5, r.top() - s * 0.3), pos2(r.left() + s * 0.5, r.top() + s * 0.2));
+            line(pos2(r.right() - s * 0.5, r.top() - s * 0.3), pos2(r.right() - s * 0.5, r.top() + s * 0.2));
         }
         Icon::Trends => {
             let base = c.y + s * 0.8;
@@ -138,6 +146,16 @@ pub fn icon_button(ui: &mut Ui, ic: Icon, size: f32, p: &Pal) -> Response {
     ui.painter().rect_filled(rect, theme::R_CONTROL, theme::alpha(p.raised, (t * 255.0) as u8));
     icon(ui.painter(), ic, rect.center(), size * 0.55, theme::mix(p.muted, p.text, t));
     resp.on_hover_cursor(CursorIcon::PointingHand)
+}
+
+/// Like [`icon_button`], but can be shown disabled: muted, no hover, no click.
+pub fn icon_button_on(ui: &mut Ui, ic: Icon, size: f32, enabled: bool, p: &Pal) -> Response {
+    if enabled {
+        return icon_button(ui, ic, size, p);
+    }
+    let (rect, resp) = ui.allocate_exact_size(Vec2::splat(size), Sense::hover());
+    icon(ui.painter(), ic, rect.center(), size * 0.55, theme::alpha(p.muted, 90));
+    resp
 }
 
 /// The Timelyx mark: a clock with one arc segment, in the accent colour. Flat, no tile.

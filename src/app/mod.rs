@@ -26,6 +26,7 @@ mod apps;
 mod categories;
 mod charts;
 mod data;
+mod daynav;
 mod limits;
 mod onboarding;
 mod settings;
@@ -99,10 +100,14 @@ pub struct App {
     pub today: NaiveDate,
     /// Bumped whenever the data may have changed; cached views compare it.
     pub version: u64,
+    /// Like `version`, but bumped only by edits (categories, programs, settings), not by the periodic refresh.
+    /// A past day does not change while the tracker keeps writing, so its cached view follows this one.
+    pub edit_version: u64,
     pub updater: Updater,
     pub demo: bool,
     pub toast: Option<Toast>,
     pub today_view: today::TodayState,
+    pub day_nav: daynav::DayNav,
     pub trends_view: trends::TrendsState,
     pub apps_view: apps::AppsState,
     pub cats_view: categories::CatsState,
@@ -113,6 +118,8 @@ pub struct App {
     last_refresh: f64,
     cfg_dirty: Option<f64>,
     shots: Option<Shots>,
+    /// Screenshot runs only: a pointer position to hover (`TIMELYX_SHOT_HOVER=x,y`).
+    shot_hover: Option<egui::Pos2>,
     modal_generation: u64,
     modal_was_open: bool,
 }
@@ -169,7 +176,14 @@ impl App {
         });
         let first = shots.as_ref().and_then(|s| s.queue.first().copied()).unwrap_or(Nav::Today);
         let ob_track = cfg.track_sites;
-        Self {
+        let test = crate::config::is_test_instance();
+        let shot_hover = std::env::var("TIMELYX_SHOT_HOVER").ok().filter(|_| test).and_then(|v| {
+            let (x, y) = v.split_once(',')?;
+            Some(egui::pos2(x.trim().parse().ok()?, y.trim().parse().ok()?))
+        });
+        // Screenshot runs may start on a past day (`TIMELYX_SHOT_DAY=3` is three days back) or with the picker open.
+        let shot_day = std::env::var("TIMELYX_SHOT_DAY").ok().filter(|_| test).and_then(|v| v.parse::<i64>().ok());
+        let mut app = Self {
             lang,
             dir,
             db,
@@ -179,10 +193,12 @@ impl App {
             now,
             today: Local::now().date_naive(),
             version: 1,
+            edit_version: 1,
             updater,
             demo,
             toast: None,
             today_view: Default::default(),
+            day_nav: Default::default(),
             trends_view: Default::default(),
             apps_view: Default::default(),
             cats_view: Default::default(),
@@ -193,10 +209,18 @@ impl App {
             last_refresh: f64::NEG_INFINITY,
             cfg_dirty,
             shots,
+            shot_hover,
             modal_generation: 0,
             modal_was_open: false,
             cfg,
+        };
+        if let Some(n) = shot_day {
+            app.today_view.day = Some(app.today - chrono::Duration::days(n));
         }
+        if test && std::env::var_os("TIMELYX_SHOT_PICKER").is_some() {
+            app.open_picker();
+        }
+        app
     }
 
     pub fn s(&self) -> &'static S {
@@ -226,6 +250,7 @@ impl App {
     pub fn data_changed(&mut self) {
         self.cat = Catalog::load(&self.db);
         self.version += 1;
+        self.edit_version += 1;
     }
 
     /// Makes the next frame ask the tracker again, so a pause or start shows up quickly.
@@ -320,8 +345,22 @@ impl App {
                 self.go(Nav::ALL[i]);
             }
         }
+        // Arrows and Home browse the days while nothing is being typed and no dialog is open.
+        if self.nav == Nav::Today && self.day_nav.picker.is_none() && !self.settings_view.confirm_delete && !ctx.egui_wants_keyboard_input() {
+            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::ArrowLeft)) {
+                self.apply_day_act(daynav::DayAct::Prev);
+            }
+            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::ArrowRight)) {
+                self.apply_day_act(daynav::DayAct::Next);
+            }
+            if ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Home)) {
+                self.apply_day_act(daynav::DayAct::Today);
+            }
+        }
         if !egui::Popup::is_any_open(ctx) && ctx.input_mut(|i| i.consume_key(Modifiers::NONE, Key::Escape)) {
-            if self.settings_view.confirm_delete {
+            if self.day_nav.picker.is_some() {
+                self.day_nav.picker = None;
+            } else if self.settings_view.confirm_delete {
                 self.settings_view.confirm_delete = false;
             } else if self.apps_view.selected.is_some() {
                 self.apps_view.selected = None;
@@ -346,7 +385,7 @@ impl App {
             return;
         }
         sh.wait += 1;
-        if sh.wait > 25 && !sh.asked {
+        if sh.wait > (if self.shot_hover.is_some() { 120 } else { 25 }) && !sh.asked {
             sh.asked = true;
             let path = sh.dir.join(format!("{}-{}.png", sh.prefix, nav_name));
             let _ = std::fs::create_dir_all(&sh.dir);
@@ -374,6 +413,13 @@ impl App {
 }
 
 impl eframe::App for App {
+    fn raw_input_hook(&mut self, _ctx: &egui::Context, raw: &mut egui::RawInput) {
+        // Move the pointer once and leave it: a tooltip only opens for a pointer that has stopped.
+        if let (Some(pos), true) = (self.shot_hover, self.shots.as_ref().is_some_and(|s| s.wait < 8)) {
+            raw.events.push(egui::Event::PointerMoved(pos));
+        }
+    }
+
     fn logic(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let t = ctx.input(|i| i.time);
         self.now = chrono::Utc::now().timestamp();
@@ -402,14 +448,16 @@ impl eframe::App for App {
                     if let Some(s) = self.refresh.snap.lock().ok().and_then(|mut g| g.take()) {
                         self.snap = s;
                     }
-                    self.data_changed();
+                    // The tracker wrote more data: today changes, finished days do not.
+                    self.cat = Catalog::load(&self.db);
+                    self.version += 1;
                 }
                 if t - self.last_refresh >= 5.0 {
                     self.last_refresh = t;
                     self.start_refresh(ctx);
                 }
             }
-            ctx.request_repaint_after(Duration::from_secs(if self.nav == Nav::Today { 1 } else { 5 }));
+            ctx.request_repaint_after(Duration::from_secs(if self.nav == Nav::Today && self.selected_day() == self.today { 1 } else { 5 }));
         }
         if self.cfg_dirty.is_some_and(|d| t - d > 0.4) {
             self.flush();
@@ -454,12 +502,13 @@ impl eframe::App for App {
             Nav::Limits => self.limits_view(&mut cui, &p),
             Nav::Settings => self.settings_view(&mut cui, &p),
         }
-        let modal_open = self.settings_view.confirm_delete;
+        let modal_open = self.settings_view.confirm_delete || self.day_nav.picker.is_some();
         if modal_open && !self.modal_was_open {
             self.modal_generation += 1;
         }
         self.modal_was_open = modal_open;
         self.settings_dialogs(&ctx, &p);
+        self.day_picker(&ctx, &p);
         self.toast_ui(&ctx, &p);
     }
 }

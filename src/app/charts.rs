@@ -5,7 +5,7 @@ use super::widgets::arc_points;
 use crate::fmt;
 use crate::i18n::Lang;
 use crate::theme::{self, Pal};
-use eframe::egui::{epaint::PathStroke, Align2, Color32, CornerRadius, Painter, Rect, RichText, Sense, Shape, Stroke, StrokeKind, Ui, pos2, vec2};
+use eframe::egui::{self, epaint::PathStroke, Align2, Color32, CornerRadius, Painter, Rect, RichText, Sense, Shape, Stroke, StrokeKind, Ui, pos2, vec2};
 
 /// One block of the day timeline.
 pub struct Seg {
@@ -124,9 +124,14 @@ pub struct BarDay {
     pub by_cat: Vec<(String, i64)>,
     pub total: i64,
     pub highlight: bool,
+    /// A click on the bar opens that day (false for days that have not happened yet).
+    pub clickable: bool,
+    /// The day the bar stands for.
+    pub date: chrono::NaiveDate,
 }
 
 /// Stacked bars per day with a seconds axis, hairline grid and a hover tooltip with the split by category.
+/// Returns the index of the day that was clicked. `click_hint` is the last tooltip line of a clickable day.
 #[allow(clippy::too_many_arguments)]
 pub fn stacked_bars(
     ui: &mut Ui,
@@ -136,9 +141,10 @@ pub fn stacked_bars(
     days: &[BarDay],
     color_of: &dyn Fn(&str) -> Color32,
     name_of: &dyn Fn(&str) -> String,
-) {
+    click_hint: &str,
+) -> Option<usize> {
     let w = ui.available_width();
-    let (rect, resp) = ui.allocate_exact_size(vec2(w, height), Sense::hover());
+    let (rect, resp) = ui.allocate_exact_size(vec2(w, height), Sense::click());
     let gutter = 44.0;
     let plot = Rect::from_min_max(pos2(rect.left() + gutter, rect.top() + 6.0), pos2(rect.right(), rect.bottom() - 22.0));
     let painter = ui.painter();
@@ -157,6 +163,12 @@ pub fn stacked_bars(
     let slot = plot.width() / n as f32;
     let bar_w = (slot * 0.62).clamp(3.0, 56.0);
     let hover_idx = resp.hover_pos().filter(|pos| plot.expand2(vec2(0.0, 6.0)).contains(*pos)).map(|pos| (((pos.x - plot.left()) / slot) as usize).min(n - 1));
+    let hover_clickable = hover_idx.is_some_and(|i| days[i].clickable);
+    let clicked = if hover_clickable && resp.clicked() { hover_idx } else { None };
+    if hover_clickable {
+        ui.ctx().set_cursor_icon(egui::CursorIcon::PointingHand);
+    }
+    let painter = ui.painter();
     for (i, d) in days.iter().enumerate() {
         let cx = plot.left() + slot * (i as f32 + 0.5);
         if Some(i) == hover_idx {
@@ -192,8 +204,13 @@ pub fn stacked_bars(
                     ui.label(RichText::new(fmt::duration(lang, *secs)).font(theme::mono(12.0)).color(p.text));
                 });
             }
+            if d.clickable {
+                ui.add_space(2.0);
+                ui.label(RichText::new(click_hint).font(theme::reg(12.0)).color(p.muted));
+            }
         });
     }
+    clicked
 }
 
 /// Weekday by hour: darker means more time. `order` lists the weekday rows to draw (Monday = 0).

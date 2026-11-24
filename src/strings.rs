@@ -21,7 +21,7 @@ macro_rules! strings {
 strings! {
     text {
         // Navigation
-        nav_today: "Today", "Сегодня", "Сьогодні";
+        nav_today: "Day", "День", "День";
         nav_trends: "Week and month", "Неделя и месяц", "Тиждень і місяць";
         nav_apps: "Apps and sites", "Программы и сайты", "Програми та сайти";
         nav_categories: "Categories", "Категории", "Категорії";
@@ -30,7 +30,11 @@ strings! {
         collapse_sidebar: "Collapse sidebar", "Свернуть панель", "Згорнути панель";
         expand_sidebar: "Expand sidebar", "Развернуть панель", "Розгорнути панель";
 
-        // Today
+        // Day
+        pick_date: "Pick a date", "Выбрать дату", "Обрати дату";
+        no_activity_day: "No activity recorded on this day", "В этот день активность не записана", "Цього дня активність не записана";
+        click_details: "Click for details", "Нажмите для подробностей", "Натисніть, щоб переглянути деталі";
+        vs_prev_day: "vs previous day", "к предыдущему дню", "до попереднього дня";
         active_time: "Active time", "Активное время", "Активний час";
         day_timeline: "Day timeline", "Лента дня", "Стрічка дня";
         by_category: "By category", "По категориям", "За категоріями";

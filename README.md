@@ -8,8 +8,8 @@ An automatic, local activity tracker for Windows and Linux. It records which pro
 
 - **Fully automatic.** Timelyx starts with the computer and follows the window in front. Time stops counting when you stop touching the keyboard and mouse (5 minutes by default), when the screen is locked, and while the computer sleeps. The idle minutes are never counted: the session is closed back-dated to your last input. A full screen window (a game, a film) and the Video and Games categories keep counting while you watch.
 - **Sites, not just browsers.** The site is read from the browser's window title, so YouTube, GitHub or Gmail show up as themselves instead of one large "Chrome" figure. Brand names are recognised for the well-known sites; for the rest the site part of the title is kept. See [Privacy](#privacy).
-- **Today.** Total active time with a comparison to yesterday, what is running now and for how long, a day timeline coloured by category (hover for the program or site and the exact start and end), a category ring with times and shares, and the top 10 programs and sites.
-- **Week and month.** Totals, the average per day and the change against the previous period, stacked bars per day by category, a weekday-by-hour heatmap, the busiest day and the longest focus run (continuous time in one category without a switch).
+- **Day.** The first tab shows today and any earlier day in the same detail. Step with the arrows (or the Left and Right keys), jump back with "Today" (or Home), or open the calendar to pick a date: the days that have data carry a dot, the year and month are dropdowns. Total active time with a comparison to the previous day, what is running now and for how long (today) or the longest focus run (an earlier day), a day timeline coloured by category (hover for the program or site and the exact start and end), a category ring with times and shares, and the top 10 programs and sites. A day with no data shows a calm empty state.
+- **Week and month.** Totals, the average per day and the change against the previous period, stacked bars per day by category (click a day to open it on the Day tab), a weekday-by-hour heatmap, the busiest day and the longest focus run (continuous time in one category without a switch).
 - **Apps and sites.** A sortable table (name, category, time, share, sessions, last used) for today, 7 days, 30 days or all time. Click a row for its daily chart, change its category right in the table, rename a program, or hide it.
 - **Categories.** Code, Browser, Communication, Video and media, Games, Office and docs, Design, System and Other, sorted by built-in rules (by program name and path). Make your own with a name and a colour from a fixed palette. System apps can be left out of the charts.
 - **Daily limits** per category or program, with a notification when reached. A limit never blocks or closes anything.
@@ -18,12 +18,14 @@ An automatic, local activity tracker for Windows and Linux. It records which pro
 - **Yours.** Export to CSV for a date range, optional automatic deletion of old data (1 to 24 months), and a "Delete all data" button.
 - English, Russian and Ukrainian; system, light and dark themes.
 
-![Week and month](assets/screenshots/dark-en-trends.png)
+![Day](assets/screenshots/dark-en-day.png)
+![Date picker](assets/screenshots/dark-en-picker.png)
+![Week and month](assets/screenshots/dark-en-trends-hover.png)
 ![Apps and sites](assets/screenshots/dark-en-apps.png)
 
 | Light theme | Russian |
 |---|---|
-| ![Light](assets/screenshots/light-en-today.png) | ![Russian](assets/screenshots/dark-ru-today.png) |
+| ![Light](assets/screenshots/light-en-day.png) | ![Russian](assets/screenshots/dark-ru-day.png) |
 
 ## How it works
 
@@ -96,7 +98,7 @@ Locally the GNU toolchain is used; CI (`.github/workflows/release.yml`) builds w
 
 ### Test tooling (`tools/`)
 
-- **Demo data.** `--demo` (or `TIMELYX_DEMO=1`) fills the data folder with a made-up two weeks of activity. Only honoured together with `TIMELYX_DATA_DIR`, and it never starts the tracker. `tools/screenshots.ps1` uses it and the window's own frame capture to make the screenshots in `assets/screenshots/`; no real activity is ever read.
+- **Demo data.** `--demo` (or `TIMELYX_DEMO=1`) fills the data folder with a made-up eight weeks of activity. Only honoured together with `TIMELYX_DATA_DIR`, and it never starts the tracker. `tools/screenshots.ps1` uses it and the window's own frame capture to make the screenshots in `assets/screenshots/`; no real activity is ever read.
 - **Live test.** `tools/live-test.ps1` runs the tracker from a temp copy with its own data folder, tells it to look at test windows only (`TIMELYX_TRACK_ONLY`), opens its own windows (copies of PowerShell named `chrome.exe` and `Code.exe` with scripted titles), checks before every step that the window in front really is one of them, and prints what was recorded. `-MeasureMinutes 10` measures the tracker's CPU and memory with no window open.
 - **Unit tests** cover the session engine (switches, idle back-dating, the full screen and video exception, sleep, lock, pause, midnight and clock-change splits), title-to-site parsing for each browser in English, Russian and Ukrainian, the category rules (Steam path, full screen), the aggregations (day, week, month, heatmap, focus run), CSV export, retention, limits, autostart (against a private registry key or folder), the X11 logic with a mocked server, and the interface strings.
 - `tools/contrast.py` checks the accent contrast: rose `#e8669a` (dark) and `#b0306a` (light) reach at least 5.0:1 on every surface and under the text colours.

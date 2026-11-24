@@ -149,9 +149,11 @@ impl App {
                                 by_cat: vec![(stat.category.clone(), *secs)],
                                 total: *secs,
                                 highlight: false,
+                                clickable: false,
+                                date: chrono::DateTime::from_timestamp(d + 3600, 0).map(|u| u.with_timezone(&chrono::Local).date_naive()).unwrap_or_default(),
                             })
                             .collect();
-                        charts::stacked_bars(ui, p, lang, 150.0, &bars, &|_| color, &|_| String::new());
+                        charts::stacked_bars(ui, p, lang, 150.0, &bars, &|_| color, &|_| String::new(), "");
                         ui.add_space(8.0);
                         ui.horizontal(|ui| {
                             ui.spacing_mut().item_spacing.x = 8.0;

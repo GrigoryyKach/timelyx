@@ -3,10 +3,11 @@
 use super::charts::{self, Seg};
 use super::data::Catalog;
 use super::widgets::{self, Icon};
-use super::{page, ranked, today_start, App};
+use super::data::local_midnight;
+use super::trends::FOCUS_GAP;
+use super::{daynav, page, ranked, App};
 use crate::db::SessionRow;
-use crate::engine::next_midnight;
-use crate::stats::{self, Item, ItemStat};
+use crate::stats::{self, Focus, Item, ItemStat};
 use crate::theme::{self, Btn, Pal};
 use crate::{fmt, platform};
 use eframe::egui::{self, Align, Align2, CursorIcon, Layout, Margin, RichText, Sense, Ui, pos2, vec2};
@@ -21,11 +22,14 @@ pub struct TodayModel {
     pub by_cat: Vec<(String, i64)>,
     pub items: Vec<ItemStat>,
     pub segs: Vec<(SessionRow, String)>,
+    pub longest: Option<Focus>,
 }
 
 #[derive(Default)]
 pub struct TodayState {
     model: Option<((u64, i64, bool), Arc<TodayModel>)>,
+    /// The day on show; `None` follows the current day.
+    pub day: Option<chrono::NaiveDate>,
 }
 
 /// A titled card: a section title over a card. `min_h` keeps neighbouring cards the same height.
@@ -60,26 +64,31 @@ pub fn two_columns(ui: &mut Ui, ratio: f32, left: impl FnOnce(&mut Ui), right: i
 
 impl App {
     fn today_model(&mut self) -> Arc<TodayModel> {
-        let from = today_start(self.now);
-        let key = (self.version, from, self.cfg.hide_system);
+        let day = self.selected_day();
+        let is_today = day == self.today;
+        let from = local_midnight(day);
+        // The current day follows the live refresh; a finished day only changes when the user edits something.
+        let key = (if is_today { self.version } else { self.edit_version }, from, self.cfg.hide_system);
         if let Some((k, m)) = &self.today_view.model {
             if *k == key {
                 return m.clone();
             }
         }
-        let to = next_midnight(&chrono::Local, from);
-        let y_from = crate::engine::day_start(&chrono::Local, from - 3600);
+        let to = local_midnight(day.succ_opt().unwrap_or(day));
+        let y_from = local_midnight(daynav::prev_day(day));
         let rows = self.load_rows(y_from, to);
-        let elapsed = (self.now - from).max(0);
+        // Today is compared with the same time yesterday; a finished day with the whole previous day.
+        let prev_end = if is_today { (y_from + (self.now - from).max(0)).min(from) } else { from };
         let items = ranked(self, &rows, from, to);
         let model = TodayModel {
             from,
             to,
             total: stats::total(&rows, from, to),
-            yesterday_same: stats::total(&rows, y_from, (y_from + elapsed).min(from)),
+            yesterday_same: stats::total(&rows, y_from, prev_end),
             sessions: rows.iter().filter(|r| r.end > from && r.start < to).count(),
             by_cat: stats::by_category(&rows, from, to),
             items,
+            longest: stats::longest_focus(&rows, from, to, FOCUS_GAP),
             segs: rows
                 .into_iter()
                 .filter(|r| r.end > from && r.start < to)
@@ -97,34 +106,40 @@ impl App {
     pub(super) fn today_view(&mut self, ui: &mut Ui, p: &Pal) {
         let t = self.s();
         let m = self.today_model();
-        let subtitle = fmt::date_with_weekday(self.lang, self.now);
+        let day = self.selected_day();
+        let is_today = day == self.today;
+        let heading = fmt::day_heading(self.lang, day, self.today);
+        let can_next = daynav::next_day(day, self.today).is_some();
         let mut start_tracker = false;
         let mut pause: Option<&'static str> = None;
-        page(ui, p, t.nav_today, Some(&subtitle), |_| {}, |ui| {
+        let mut day_act = None;
+        page(ui, p, &heading, None, |ui| day_act = daynav::nav_bar(ui, p, t, is_today, can_next), |ui| {
             // Problems first: no tracker, no way to track.
-            if self.snap.avail == "wayland" {
-                notice(ui, p, t.wayland_title, t.wayland_body, p.warning);
-                ui.add_space(16.0);
-            } else if self.snap.avail.starts_with("error") {
-                notice(ui, p, t.tracker_error, &self.snap.avail, p.negative);
-                ui.add_space(16.0);
-            } else if !self.snap.running && !self.demo {
-                theme::card(p).inner_margin(Margin::same(16)).show(ui, |ui| {
-                    ui.set_width(ui.available_width());
-                    ui.horizontal(|ui| {
-                        ui.vertical(|ui| {
-                            ui.spacing_mut().item_spacing.y = 2.0;
-                            ui.label(RichText::new(t.tracker_off).font(theme::medium(15.0)).color(p.text));
-                            theme::hint(ui, t.tracker_off_hint, p);
-                        });
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if widgets::btn(ui, t.start_tracking, Btn::Primary, p).clicked() {
-                                start_tracker = true;
-                            }
+            if is_today {
+                if self.snap.avail == "wayland" {
+                    notice(ui, p, t.wayland_title, t.wayland_body, p.warning);
+                    ui.add_space(16.0);
+                } else if self.snap.avail.starts_with("error") {
+                    notice(ui, p, t.tracker_error, &self.snap.avail, p.negative);
+                    ui.add_space(16.0);
+                } else if !self.snap.running && !self.demo {
+                    theme::card(p).inner_margin(Margin::same(16)).show(ui, |ui| {
+                        ui.set_width(ui.available_width());
+                        ui.horizontal(|ui| {
+                            ui.vertical(|ui| {
+                                ui.spacing_mut().item_spacing.y = 2.0;
+                                ui.label(RichText::new(t.tracker_off).font(theme::medium(15.0)).color(p.text));
+                                theme::hint(ui, t.tracker_off_hint, p);
+                            });
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                if widgets::btn(ui, t.start_tracking, Btn::Primary, p).clicked() {
+                                    start_tracker = true;
+                                }
+                            });
                         });
                     });
-                });
-                ui.add_space(16.0);
+                    ui.add_space(16.0);
+                }
             }
 
             two_columns(
@@ -136,7 +151,7 @@ impl App {
                         ui.label(RichText::new(fmt::duration(self.lang, m.total)).font(theme::mono(32.0)).color(p.text));
                         let change = stats::change_percent(m.total, m.yesterday_same);
                         let mut line = match change {
-                            Some(c) => format!("{}{}% {}", if c > 0 { "+" } else { "" }, c, yesterday_phrase(self)),
+                            Some(c) => format!("{}{}% {}", if c > 0 { "+" } else { "" }, c, if is_today { yesterday_phrase(self) } else { t.vs_prev_day }),
                             None => String::new(),
                         };
                         if m.sessions > 0 {
@@ -149,9 +164,26 @@ impl App {
                     });
                 },
                 |ui| {
-                    titled_card(ui, p, t.now_in, 96.0, |ui| {
-                        pause = self.now_card(ui, p);
-                    });
+                    if is_today {
+                        titled_card(ui, p, t.now_in, 96.0, |ui| {
+                            pause = self.now_card(ui, p);
+                        });
+                    } else {
+                        titled_card(ui, p, t.longest_focus, 96.0, |ui| {
+                            ui.spacing_mut().item_spacing.y = 6.0;
+                            match &m.longest {
+                                Some(f) => {
+                                    ui.label(RichText::new(fmt::duration(self.lang, f.secs())).font(theme::mono(32.0)).color(p.text));
+                                    let cat = self.cat.category(self.lang, &f.category);
+                                    theme::hint(ui, &format!("{}  ·  {}", cat.name, fmt::clock(f.start, self.h24())), p);
+                                }
+                                None => {
+                                    ui.label(RichText::new("–").font(theme::mono(32.0)).color(p.muted));
+                                    theme::hint(ui, t.focus_none, p);
+                                }
+                            }
+                        });
+                    }
                 },
             );
             ui.add_space(24.0);
@@ -159,9 +191,13 @@ impl App {
             if m.total == 0 && m.segs.is_empty() {
                 ui.add_space(24.0);
                 ui.vertical_centered(|ui| {
-                    ui.label(RichText::new(t.nothing_today).font(theme::medium(18.0)).color(p.text));
-                    ui.add_space(4.0);
-                    theme::hint(ui, t.nothing_today_hint, p);
+                    if is_today {
+                        ui.label(RichText::new(t.nothing_today).font(theme::medium(18.0)).color(p.text));
+                        ui.add_space(4.0);
+                        theme::hint(ui, t.nothing_today_hint, p);
+                    } else {
+                        ui.label(RichText::new(t.no_activity_day).font(theme::medium(18.0)).color(p.text));
+                    }
                 });
                 return;
             }
@@ -172,7 +208,7 @@ impl App {
                     .iter()
                     .map(|(r, name)| Seg { start: r.start.max(m.from), end: r.end.min(m.to), color: widgets::rgb(self.cat.category(self.lang, &r.category).color), name: name.clone() })
                     .collect();
-                charts::timeline(ui, p, self.lang, self.h24(), m.from, m.to, &segs, Some(self.now));
+                charts::timeline(ui, p, self.lang, self.h24(), m.from, m.to, &segs, if is_today { Some(self.now) } else { None });
             });
             ui.add_space(24.0);
 
@@ -187,6 +223,9 @@ impl App {
                 },
             );
         });
+        if let Some(a) = day_act {
+            self.apply_day_act(a);
+        }
         if start_tracker {
             platform::spawn_background();
             self.refresh_soon();

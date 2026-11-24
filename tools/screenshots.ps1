@@ -14,7 +14,16 @@ New-Item -ItemType Directory -Force $Out | Out-Null
 $runs = @(
     @{ theme = "dark";  lang = "en"; navs = "today,trends,apps,settings,categories,limits" },
     @{ theme = "light"; lang = "en"; navs = "today,trends,apps,settings,categories,limits" },
-    @{ theme = "dark";  lang = "ru"; navs = "today" }
+    @{ theme = "dark";  lang = "ru"; navs = "today" },
+    # The Day tab on a past day, the date picker, and the click hint of the week chart (a pointer position).
+    @{ theme = "dark";  lang = "en"; navs = "today"; day = "3"; name = "day" },
+    @{ theme = "light"; lang = "en"; navs = "today"; day = "3"; name = "day" },
+    @{ theme = "dark";  lang = "ru"; navs = "today"; day = "3"; name = "day" },
+    @{ theme = "dark";  lang = "en"; navs = "today"; day = "3"; picker = "1"; name = "picker" },
+    @{ theme = "light"; lang = "en"; navs = "today"; day = "3"; picker = "1"; name = "picker" },
+    @{ theme = "dark";  lang = "ru"; navs = "today"; day = "3"; picker = "1"; name = "picker" },
+    @{ theme = "dark";  lang = "en"; navs = "trends"; hover = "382,400"; name = "trends-hover" },
+    @{ theme = "light"; lang = "en"; navs = "trends"; hover = "382,400"; name = "trends-hover" }
 )
 foreach ($r in $runs) {
     $data = Join-Path $Work "data-$($r.theme)-$($r.lang)"
@@ -25,8 +34,12 @@ foreach ($r in $runs) {
     $env:TIMELYX_THEME = $r.theme
     $env:TIMELYX_LANG = $r.lang
     $env:TIMELYX_SHOT_DIR = (Resolve-Path $Out).Path
-    $env:TIMELYX_SHOT_PREFIX = "$($r.theme)-$($r.lang)"
+    $env:TIMELYX_SHOT_PREFIX = "$($r.theme)-$($r.lang)" + $(if ($r.name) { "-$($r.name)" } else { "" })
     $env:TIMELYX_SHOT_NAVS = $r.navs
+    foreach ($v in "TIMELYX_SHOT_DAY", "TIMELYX_SHOT_PICKER", "TIMELYX_SHOT_HOVER") { Remove-Item "Env:$v" -ErrorAction SilentlyContinue }
+    if ($r.day) { $env:TIMELYX_SHOT_DAY = $r.day }
+    if ($r.picker) { $env:TIMELYX_SHOT_PICKER = $r.picker }
+    if ($r.hover) { $env:TIMELYX_SHOT_HOVER = $r.hover }
     $p = Start-Process -FilePath $Exe -PassThru
     if (-not $p.WaitForExit(120000)) { $p.Kill(); throw "timed out" }
 }
